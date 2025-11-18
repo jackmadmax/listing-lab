@@ -77,7 +77,6 @@
         <field name="model">real_estate.listing</field>
         <field name="arch" type="xml">
             <kanban class="o_real_estate_kanban">
-                <!-- Preload fields for use in templates -->
                 <field name="primary_image_id_preview_url"/>
                 <field name="address"/>
                 <field name="city"/>
@@ -90,15 +89,43 @@
                 <field name="status"/>
                 <field name="user_tag_ids"/>
                 <field name="is_favorite"/>
+                <field name="lot_acres"/>
 
                 <templates>
                     <t t-name="card">
                         <div class="d-flex flex-column">
+
                             <!-- Image + favorite -->
                             <div class="position-relative">
                                 <img t-att-src="record.primary_image_id_preview_url.raw_value"
                                      alt="Primary Photo"
                                      class="img-fluid rounded-top"/>
+
+                                <widget name="web_ribbon"
+                                        title="Active"
+                                        bg_color="text-bg-success"
+                                        invisible="market_status != 'active'"/>
+
+                                <widget name="web_ribbon"
+                                        title="Pending"
+                                        bg_color="text-bg-warning"
+                                        invisible="market_status != 'pending'"/>
+
+                                <widget name="web_ribbon"
+                                        title="Contingent"
+                                        bg_color="text-bg-warning"
+                                        invisible="market_status != 'contingent'"/>
+
+                                <widget name="web_ribbon"
+                                        title="Off Market"
+                                        bg_color="text-bg-secondary"
+                                        invisible="market_status != 'off_market'"/>
+
+                                <widget name="web_ribbon"
+                                        title="Sold"
+                                        bg_color="text-bg-danger"
+                                        invisible="market_status != 'sold'"/>
+
                             </div>
 
                             <!-- Body -->
@@ -115,40 +142,41 @@
                                 </div>
 
                                 <!-- Price and quick stats -->
-                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                <h2 class="d-flex align-items-center justify-content-between gap-2">
                                     <div class="fw-bold">
-                                        <h2>
-                                            <field name="price"
-                                                   widget="monetary_no_cents"
-                                                   class="text-success"
-                                                   nolabel="1"/>
-                                        </h2>
+                                        <field name="price"
+                                               widget="monetary_no_cents"
+                                               nolabel="1"/>
                                     </div>
                                     <div class="text-muted small text-nowrap">
                                         <t t-if="record.bedrooms.value != null">
                                             <t t-esc="record.bedrooms.value"/> bd
                                         </t>
-                                        <t t-if="record.baths_total.value != null"> · <t
-                                                t-esc="record.baths_total.value"/> ba</t>
-                                        <t t-if="record.sqft.value"> · <t t-esc="record.sqft.value"/> sqft</t>
+                                        <t t-if="record.baths_total.value != null"> ·
+                                            <t t-esc="record.baths_total.value"/> ba
+                                        </t>
+                                        <t t-if="record.lot_acres.value"> ·
+                                            <t t-esc="record.lot_acres.value"/> acres
+                                        </t>
                                     </div>
-                                </div>
+                                </h2>
 
-                                <!-- Status badges -->
                                 <div class="d-flex flex-wrap gap-1">
-                                    <span t-if="record.status.value" class="badge bg-secondary text-uppercase">
-                                        <t t-esc="record.status.value"/>
-                                    </span>
-                                    <span t-if="record.market_status.value"
-                                          t-att-class="'badge text-uppercase ' + (['pending','contingent'].includes(record.market_status.value) ? 'bg-warning text-dark' : (record.market_status.value === 'active' ? 'bg-success' : 'bg-secondary'))">
-                                        <t t-esc="record.market_status.value"/>
-                                    </span>
+                                    <field name="status"
+                                           widget="badge"
+                                           decoration-primary="status == 'new'"
+                                           decoration-success="status == 'interested'"
+                                           decoration-danger="status == 'rejected'"/>
+
+                                    <field name="market_status"
+                                           widget="badge"
+                                           decoration-warning="market_status in ('pending', 'contingent')"
+                                           decoration-success="market_status == 'active'"/>
+
                                 </div>
 
-                                <!-- User tags -->
                                 <div class="mt-1">
                                     <field name="user_tag_ids"
-                                           widget="many2many_tags"
                                            nolabel="1"
                                            options="{'color_field': 'color'}"/>
                                 </div>
