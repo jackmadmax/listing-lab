@@ -8,6 +8,7 @@ RUN pip install "openai>=1.0.0" "pika>=1.3.0"
 # Copy your custom addons into the container
 COPY addons /volumes/addons
 COPY config/odoo.conf /volumes/config/odoo.conf
+COPY hooks/hook_setup.sh /hook_setup
 
 # Provide Unovis UMD locally for the portal by copying from the Node build stage
 RUN npm install @unovis/ts@^1.5.4

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/addons/real_estate_listings/static/description/icon.png" width="580" />
+  <img src="/addons/real_estate_listings/static/description/icon.png" width="240" />
 </p>
 
 # 🏡 Listing Lab 🧪
@@ -29,6 +29,8 @@ run everything locally.
 - Pull fresh details from Realtor.com so your info doesn’t go stale
 
 ![Overview of Listing Lab](./docs/static/img/demo.png)
+
+To scrape a property, simply copy the address into the Address field, and click "Update Property"
 
 ### Check out our open-source Odoo Docker image
 
