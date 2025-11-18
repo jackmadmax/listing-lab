@@ -1,31 +1,6 @@
-/** Make the "Your Notes" notebook fill the available height next to the right column **/
-
-.o_form_view .o_notes_layout {
-  display: flex; // make row flex so cols match height
-  align-items: stretch;
-}
-
-.o_form_view .o_notes_layout > .o_notes_col {
-  display: flex; // make left col a flex column
-  flex-direction: column;
-  min-height: 100%; // stretch with the row
-}
-
-/* Let the notebook consume remaining vertical space */
-.o_form_view .o_notes_layout .o_notes_notebook {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0; // important for flex children in some browsers
-}
-
-/* Ensure tab content is also flexed so the page fills the space */
-.o_form_view .o_notes_layout .o_notes_notebook > .tab-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-}
-
-.o_form_view .o_notes_layout .o_notes_notebook > .tab-content > .tab-pane.active {
-  flex: 1 1 auto;
+.o_list_view .thumb-50 img {
+  width: 50px !important;
+  height: 50px !important;
+  object-fit: cover;
+  border-radius: 6px;
 }

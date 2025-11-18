@@ -5,31 +5,68 @@
         <field name="name">real_estate.list</field>
         <field name="model">real_estate.listing</field>
         <field name="arch" type="xml">
-            <list string="Real Estate Listings">
-                <field name="address"/>
-                <field name="price"/>
-                <field name="price_per_sqft" string="$/sqft"/>
-                <field name="bedrooms" string="Bd"/>
-                <field name="baths_total" string="Bth"/>
-                <field name="sqft" string="Sqft"/>
-                <field name="lot_acres" string="Lot (Acres)"/>
-                <field name="year_built" string="YrBlt" widget="integer_no_comma"/>
-                <field name="listing_date" string="Date" widget="date"/>
-                <field name="days_on_market" string="Days"/>
+            <list string="Real Estate Listings" default_order="is_favorite desc, create_date desc">
+                <field name="primary_image_id_preview_url"
+                       widget="image_url"
+                       string="Img"
+                       class="thumb-50"/>
+                <field name="is_favorite"
+                       widget="boolean_favorite"
+                       class="me-2"
+                       nolabel="1"/>
+
+                <field name="address"
+                       class="o_list_col_auto"/>
+
+                <field name="city"/>
+
+                <field name="price"
+                       widget="monetary_no_cents"/>
+
+                <field name="price_per_sqft"
+                       string="$/sqft"/>
+
+                <field name="bedrooms"
+                       string="Bd"/>
+
+                <field name="baths_total"
+                       string="Bth"/>
+
+                <field name="sqft"
+                       string="Sqft"/>
+
+                <field name="lot_acres"
+                       string="Lot (Acres)"/>
+
+                <field name="year_built"
+                       string="YrBlt"
+                       widget="integer_no_comma"/>
+
+                <field name="listing_date"
+                       string="LstDate"
+                       widget="date"/>
+
+                <field name="days_on_market"
+                       string="LstAge"/>
+
+                <field name="create_date"
+                       string="CrtDate"
+                       widget="date"/>
+
                 <field name="status"
                        widget="badge"
                        decoration-primary="status == 'new'"
                        decoration-success="status == 'interested'"
-                       decoration-danger="status == 'rejected'"
-                />
+                       decoration-danger="status == 'rejected'"/>
 
                 <field name="market_status"
                        widget="badge"
                        decoration-warning="market_status in ('pending', 'contingent')"
-                       decoration-success="market_status == 'active'"
-                />
+                       decoration-success="market_status == 'active'"/>
 
-                <field name="user_notes" string="Notes"></field>
+                <field name="user_notes"
+                       string="Notes"/>
+
                 <field name="user_tag_ids"
                        widget="many2many_tags"
                        domain="[('tag_type','=','user')]"

@@ -15,7 +15,12 @@ class RealEstate(models.Model):
     _name = 'real_estate.listing'
     _description = 'Real Estate Listings'
     _rec_name = 'address'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = [
+        'mail.thread',
+        'mail.activity.mixin'
+    ]
+
+    _order = 'is_favorite desc, create_date desc'
 
     # Basic Information
     property_id = fields.Char(
