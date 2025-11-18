@@ -28,6 +28,8 @@ run everything locally.
 - See popularity hints when available (views, saves, clicks)
 - Pull fresh details from Realtor.com so your info doesn’t go stale
 
+![Overview of Listing Lab](./docs/static/img/demo.png)
+
 ### Check out our open-source Odoo Docker image
 
 Are you looking to make apps like this easily?
