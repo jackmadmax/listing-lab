@@ -122,8 +122,18 @@ By default, the login is:
 
 # Configure the scraper
 
-After you have started the scraper, you will need to generate an API key and set it in the
-`.env` file with the key `ODOO_API_KEY`.
+After you have started the web application, you will need to generate an API key for the scraper to use.
+
+If you are using the Docker Compose setup, you can update the environment variable `ODOO_API_KEY` in the
+`docker-compose.yml` file.
+
+Or, you can create a `.env` file in the root of the project.
+
+If you are using a `.env` file, add the following line:
+
+```dotenv
+ODOO_API_KEY=your_api_key_here
+```
 
 ## Generate an Odoo API Key
 
