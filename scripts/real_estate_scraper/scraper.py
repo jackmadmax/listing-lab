@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import Dict, List, Optional, Any
 
 import pika
@@ -228,12 +228,15 @@ class PropertyScraper:
                 kwargs['vals_list'] = [vals]  # Wrap single record in list
 
             url = f"{self.base_url}/{model}/{method}"
-            logger.debug(f"Odoo request URL={url} payload={_masked(kwargs)}")
+            # Convert any datetime objects deeply to JSON-serializable strings
+            safe_kwargs = self.convert_datetimes_for_json(kwargs)
+
+            logger.debug(f"Odoo request URL={url} payload={_masked(safe_kwargs)}")
 
             response = requests.post(
                 url,
                 headers=self.headers,
-                json=kwargs,
+                json=safe_kwargs,
                 timeout=30
             )
 
@@ -1137,12 +1140,16 @@ class PropertyScraper:
         # We use the model's model_dump() method which handles nested models
         prop = property_model.model_dump()
 
+        logger.debug(f"Mapping property to Odoo fields: {prop}")
+
         # Extract address components if available
         address_components = {}
 
         if 'address' in prop:
             # Handle case where key exists but value is None
             address = prop.get('address') or {}
+
+            logger.debug(f"Extracting address components from property: {address}")
 
             address_components = {
                 'street': address.get('street', ''),
@@ -1153,10 +1160,14 @@ class PropertyScraper:
                 'formatted_address': address.get('formatted_address', '')
             }
 
+            logger.debug(f"Parsed Address Component: {address_components}")
+
         # Extract description components if available
         description_components = {}
 
         if 'description' in prop:
+            logger.debug(f"Description Component: {prop['description']}")
+
             # Handle case where key exists but value is None
             desc = prop.get('description') or {}
 
@@ -1172,6 +1183,8 @@ class PropertyScraper:
                 'style': desc.get('style', ''),
                 'text': desc.get('text', '')
             }
+
+            logger.debug(f"Parsed Description Component: {description_components}")
 
         # Extract advertiser information from nested structure
         advertisers = prop.get('advertisers', {}) or {}
@@ -1190,6 +1203,8 @@ class PropertyScraper:
         agent_phone = first_phone(agent_phones)
 
         # Map HomeHarvest fields to Odoo fields
+        logger.debug("Generating Odoo property record data-mapping")
+
         odoo_property = {
             # Basic Information
             'property_id': prop.get('property_id', ''),
@@ -1210,7 +1225,11 @@ class PropertyScraper:
             'state': address_components.get('state', ''),
             'zip_code': address_components.get('zip_code', ''),
             'county': prop.get('county', ''),
-            'neighborhoods': json.dumps(prop.get('neighborhoods', [])) if prop.get('neighborhoods') else '',
+            'neighborhoods': json.dumps(
+                self.convert_datetimes_for_json(
+                    prop.get('neighborhoods', [])
+                )
+            ) if prop.get('neighborhoods') else '',
 
             # Location Information
             'latitude': float(prop.get('latitude', 0.0) or 0.0),
@@ -1225,11 +1244,10 @@ class PropertyScraper:
             'sold_price': float(prop.get('sold_price', 0) or 0),
             'last_sold_price': float(prop.get('last_sold_price', 0) or 0),
             'estimated_monthly_rental': float(prop.get('estimated_monthly_rental', 0) or 0),
-
-            # Property Description
-            # Ensure property_type is a serializable value
-            'property_type': self.map_property_type(description_components.get('style', '')),
-            # property_type_raw removed in Odoo model
+            'property_type': self.map_property_type(
+                description_components.get('style', '')
+            )
+            ,
             'listing_description': description_components.get('text', ''),
             'description_title': description_components.get('name', ''),
             'bedrooms': int(description_components.get('beds', 0) or 0),
@@ -1239,7 +1257,11 @@ class PropertyScraper:
             'lot_sqft': int(description_components.get('lot_sqft', 0) or 0),
             'stories': float(description_components.get('stories', 0.0) or 0.0),
             'garage': int(description_components.get('garage', 0) or 0),
-            'parking': json.dumps(prop.get('parking', {})) if prop.get('parking') else '',
+            'parking': json.dumps(
+                self.convert_datetimes_for_json(
+                    prop.get('parking', {})
+                )
+            ) if prop.get('parking') else '',
             'year_built': int(description_components.get('year_built', 0) or 0),
             # new_construction removed; we set is_new_construction from flags below
 
@@ -1269,14 +1291,13 @@ class PropertyScraper:
             'office_name': office.get('name', ''),
             'office_uuid': office.get('uuid', ''),
             'office_email': office.get('email', ''),
-            # office_phones removed in Odoo model
 
             # Tax Record Information
-            # Use `or {}` so that if the key exists but is None, we still get an empty dict
             'tax_record_apn': (prop.get('tax_record') or {}).get('apn', ''),
             'tax_record_cl_id': (prop.get('tax_record') or {}).get('cl_id', ''),
             'tax_record_last_update_date': self.format_datetime(
-                (prop.get('tax_record') or {}).get('last_update_date', '')),
+                (prop.get('tax_record') or {}).get('last_update_date', '')
+            ),
             'tax_record_public_record_id': (prop.get('tax_record') or {}).get('public_record_id', ''),
             'tax_record_tax_parcel_id': (prop.get('tax_record') or {}).get('tax_parcel_id', ''),
 
@@ -1291,16 +1312,32 @@ class PropertyScraper:
             'is_price_reduced': bool((prop.get('flags') or {}).get('is_price_reduced', False)),
 
             # Additional Information
-            'pet_policy': json.dumps(prop.get('pet_policy', {})) if prop.get('pet_policy') else '',
             'terms': prop.get('terms', ''),
-            # nearby schools handled via M2M linking below
-            'open_houses': json.dumps(prop.get('open_houses', [])) if prop.get('open_houses') else '',
-            'units': json.dumps(prop.get('units', [])) if prop.get('units') else '',
+
+            'pet_policy': json.dumps(
+                self.convert_datetimes_for_json(
+                    prop.get('pet_policy', {})
+                )
+            ) if prop.get('pet_policy') else '',
+
+            'open_houses': json.dumps(
+                self.convert_datetimes_for_json(
+                    prop.get('open_houses', [])
+                )
+            ) if prop.get('open_houses') else '',
+
+            'units': json.dumps(
+                self.convert_datetimes_for_json(
+                    prop.get('units', [])
+                )
+            ) if prop.get('units') else '',
+
             'current_estimates': json.dumps(
                 self.convert_datetimes_for_json(
                     prop.get('current_estimates', {})
                 )
             ) if prop.get('current_estimates') else '',
+
             'estimates': json.dumps(
                 self.convert_datetimes_for_json(
                     prop.get('estimates', {})
@@ -1308,10 +1345,14 @@ class PropertyScraper:
             ) if prop.get('estimates') else '',
         }
 
+        logger.debug(f"Odoo property record data-mapping: {odoo_property}")
+
         # Add property tags if they exist
         property_tags = prop.get('tags', [])
 
         if property_tags:
+            logger.debug(f"Property tags: {property_tags}")
+
             odoo_property['property_tags'] = json.dumps(property_tags)
 
             # Process property tags to create/lookup tag records
@@ -1335,7 +1376,9 @@ class PropertyScraper:
                     domain=[["name", "=", name]],
                     limit=1,
                 )
+
                 sid = existing[0] if existing else None
+
                 if not sid:
                     created = self.odoo_request(
                         'real_estate.school',
@@ -1344,8 +1387,10 @@ class PropertyScraper:
                     )
                     if created:
                         sid = created[0]
+
                 if sid:
                     school_ids.append(sid)
+
             if school_ids:
                 odoo_property['nearby_school_ids'] = [(6, 0, school_ids)]
 
@@ -1377,6 +1422,8 @@ class PropertyScraper:
                     logger.warning(f"Skipping non-serializable value for key {k}: {type(v)}, error: {str(e)}")
                     continue
 
+        logger.debug(f"Filtered Odoo property record data-mapping: {filtered_property}")
+                            
         return filtered_property
 
     def format_address(self, address_components: Dict[str, str]) -> str:
@@ -1478,9 +1525,15 @@ class PropertyScraper:
         """
         if isinstance(obj, datetime):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        elif isinstance(obj, time):
+            return obj.strftime('%H:%M:%S')
         elif isinstance(obj, dict):
             return {k: self.convert_datetimes_for_json(v) for k, v in obj.items()}
         elif isinstance(obj, list):
+            return [self.convert_datetimes_for_json(item) for item in obj]
+        elif isinstance(obj, tuple):
             return [self.convert_datetimes_for_json(item) for item in obj]
         else:
             return obj
