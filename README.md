@@ -11,6 +11,7 @@ your view of a property stays current without constant refreshing.
 Under the hood, this repo includes the Listing Lab Odoo addon, a small scraper service, and a Docker Compose setup to
 run everything locally.
 
+> [!TIP]
 > Are you looking to make apps like this easily?
 > Adomi's Odoo Docker container makes developing and running Odoo
 > applications fun and easy.
