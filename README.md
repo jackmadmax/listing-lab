@@ -36,17 +36,32 @@ run everything locally.
 
 ![Overview of Listing Lab](./docs/static/img/demo.png)
 
-To scrape a property, simply copy the address into the Address field, and click "Update Property"
+To scrape a property, copy the address into the Address field, and click "Update Property"
 
 # Getting started
 
-## Docker
+> [!WARN]
+> This application is made to run via Docker.
+> You can download Docker Desktop if you are on Windows or Mac
+>
+>**[Download Docker Desktop](https://www.docker.com/products/docker-desktop/)**
 
-This application is made to run via Docker.
+# Docker Compose
 
-You can download Docker Desktop if you are on Windows or Mac
+This project includes a `docker-compose.yml` file that will start the application and the scraper.
 
-**[Download Docker Desktop](https://www.docker.com/products/docker-desktop/)**
+See the [docker](./docker) section for more details.
+
+Download the [docker-compose.yml](./docker/docker-compose.yml), open a terminal in the folder you downloaded it to, and
+run `docker compose up` to start the application.
+
+To have it always running, run `docker compose up -d` to start it in detached mode.
+
+To stop the application, run `docker compose down`.
+
+# Running from source
+
+Clone this repository, and open a terminal in the root directory.
 
 ## Configure your instance
 
@@ -57,6 +72,13 @@ Copy the `.env.example` file to `.env`
 You can run the following command:
 
 `cp .env.example .env`
+
+## Build the application
+
+Run `docker compose build`
+
+> [!TIP]
+> You can also run `docker compose up --build`.
 
 ## Run the application
 
