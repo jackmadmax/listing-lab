@@ -604,19 +604,129 @@
         <field name="arch" type="xml">
             <search string="Search Real Estate">
                 <field name="address"/>
+                <field name="city"/>
+                <field name="state"/>
                 <field name="property_id"/>
                 <field name="mls"/>
                 <field name="mls_id"/>
-                <field name="property_type"/>
-                <field name="bedrooms"/>
-                <field name="baths_full"/>
-                <field name="price"/>
                 <field name="agent_name"/>
                 <field name="listing_tag_ids"/>
                 <field name="user_tag_ids"/>
-                <filter string="Interested" name="interested" domain="[('status', '=', 'interested')]"/>
-                <filter string="Following" name="following" domain="[('status', '=', 'following')]"/>
-                <filter string="Sold" name="sold" domain="[('status', '=', 'sold')]"/>
+
+                <!-- Quick status filters -->
+                <separator/>
+
+                <filter string="Favorites"
+                        name="favorites"
+                        domain="[('is_favorite','=',True)]"/>
+
+                <separator/>
+
+                <filter string="Interested"
+                        name="interested"
+                        domain="[('status', '=', 'interested')]"/>
+
+                <filter string="New"
+                        name="new"
+                        domain="[('status', '=', 'new')]"/>
+
+                <filter string="Not Interested"
+                        name="rejected"
+                        domain="[('status', '=', 'rejected')]"/>
+
+
+                <!-- Market status filters -->
+                <separator/>
+
+                <filter string="Active"
+                        name="market_active"
+                        domain="[('market_status', '=', 'active')]"/>
+
+                <filter string="Pending / Contingent"
+                        name="market_pending"
+                        domain="['|',
+                            ('market_status', '=', 'pending'),
+                            ('market_status', '=', 'contingent')
+                        ]"/>
+
+                <filter string="Sold / Off Market"
+                        name="market_closed"
+                        domain="['|',
+                            ('market_status', '=', 'sold'),
+                            ('market_status', '=', 'off_market')
+                        ]"/>
+
+                <!-- Days on market -->
+                <separator/>
+
+                <filter string="≤ 7 days"
+                        name="dom7"
+                        domain="[('days_on_market','&lt;=',7)]"/>
+
+                <filter string="≤ 14 days"
+                        name="dom14"
+                        domain="[('days_on_market','&lt;=',14)]"/>
+
+                <filter string="> 60 days"
+                        name="dom60p"
+                        domain="[('days_on_market','&gt;',60)]"/>
+
+                <!-- Beds / Baths minimums -->
+                <separator/>
+
+                <filter string="3+ Bd"
+                        name="beds3"
+                        domain="[('bedrooms','&gt;=',3)]"/>
+
+                <filter string="4+ Bd"
+                        name="beds4"
+                        domain="[('bedrooms','&gt;=',4)]"/>
+
+                <filter string="2+ Ba"
+                        name="baths2"
+                        domain="[('baths_total','&gt;=',2.0)]"/>
+
+                <filter string="3+ Ba"
+                        name="baths3"
+                        domain="[('baths_total','&gt;=',3.0)]"/>
+
+                <!-- Size -->
+                <separator/>
+
+                <filter string="1500+ Sqft"
+                        name="sqft1500"
+                        domain="[('sqft','&gt;=',1500)]"/>
+
+                <filter string="2000+ Sqft"
+                        name="sqft2000"
+                        domain="[('sqft','&gt;=',2000)]"/>
+
+
+                <group>
+                    <filter string="Tags"
+                            name="tags"
+                            context="{'group_by': 'user_tag_ids'}"/>
+
+                    <separator/>
+
+                    <filter string="Status"
+                            name="grp_status"
+                            context="{'group_by': 'status'}"/>
+
+                    <filter string="Market Status"
+                            name="grp_market_status"
+                            context="{'group_by': 'market_status'}"/>
+
+                    <separator/>
+
+                    <filter string="City"
+                            name="grp_city"
+                            context="{'group_by': 'city'}"/>
+
+                    <filter string="State"
+                            name="grp_state"
+                            context="{'group_by': 'state'}"/>
+                </group>
             </search>
         </field>
     </record>

@@ -12,7 +12,7 @@ services:
       ODOO_DB_PASSWORD: ${ODOO_DB_PASSWORD:-listing_lab_password}
       ODOO_DB_NAME: ${ODOO_DB_NAME:-listing_lab}
       ODOO_WORKERS: ${ODOO_WORKERS:-0}
-      ODOO_MAX_CRON_THREADS: ${ODOO_MAX_CRON_THREADS:-0}
+      ODOO_MAX_CRON_THREADS: ${ODOO_MAX_CRON_THREADS:-2}
       ODOO_LIMIT_MEMORY_HARD: ${ODOO_MEMORY_HARD:-1677721600}
       ODOO_LIMIT_MEMORY_SOFT: ${ODOO_MEMORY_SOFT:-629145600}
       ODOO_LIMIT_TIME_CPU: ${ODOO_LIMIT_TIME_CPU:-60000}
@@ -26,15 +26,16 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8069/web/health || exit 1" ]
       interval: 15s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 20s
+    depends_on:
+      - listing_lab_postgres
     volumes:
       - ./addons:/volumes/addons
       - odoo_data:/volumes/data
       - ./config/odoo.conf:/volumes/config/odoo.conf
       - ./hooks/hook_setup.sh:/hook_setup
-
   listing_lab_postgres:
     image: postgres:16
     container_name: listing_lab_postgres
@@ -80,6 +81,7 @@ services:
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-property_exchange}
       RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY:-property.scrape}
       ODOO_URL: http://listing_lab:8069
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
     volumes:
       - ./scripts/real_estate_scraper:/app
     env_file:

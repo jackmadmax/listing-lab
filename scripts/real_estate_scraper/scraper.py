@@ -12,15 +12,34 @@ import requests
 from dotenv import load_dotenv
 from homeharvest import scrape_property
 
-# Configure logging
+# Load environment variables early so LOG_LEVEL is available for logging setup
+load_dotenv()
+
+
+# Configure logging with LOG_LEVEL env support
+def _resolve_log_level(value: str) -> int:
+    if not value:
+        return logging.INFO
+    value = str(value).strip().lower()
+    mapping = {
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warning': logging.WARNING,
+        'warn': logging.WARNING,
+        'error': logging.ERROR,
+        'critical': logging.CRITICAL,
+    }
+    return mapping.get(value, logging.INFO)
+
+
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'info')
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=_resolve_log_level(LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 # RabbitMQ connection parameters
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
@@ -40,12 +59,20 @@ ODOO_API_KEY = os.getenv('ODOO_API_KEY')
 
 class PropertyScraper:
     def __init__(self):
+        self.base_url = None
+        self.headers = None
+        self.channel = None
+        self.connection = None
+
         self.connect_rabbitmq()
         self.connect_odoo()
 
     def connect_rabbitmq(self):
-        """Connect to RabbitMQ and set up channel"""
+        """Connect to RabbitMQ and set up a channel"""
         logger.info(f"Connecting to RabbitMQ at {RABBITMQ_HOST}:{RABBITMQ_PORT}")
+        logger.debug(
+            f"RabbitMQ settings: exchange={RABBITMQ_EXCHANGE}, queue={RABBITMQ_QUEUE}, routing_key={RABBITMQ_ROUTING_KEY}, user={RABBITMQ_USER}"
+        )
 
         # Retry connection to RabbitMQ with exponential backoff
         retry_count = 0
@@ -63,8 +90,12 @@ class PropertyScraper:
                     heartbeat=600
                 )
 
+                logger.debug("RabbitMQ ConnectionParameters created (heartbeat=600)")
+
                 self.connection = pika.BlockingConnection(parameters)
                 self.channel = self.connection.channel()
+
+                logger.debug("RabbitMQ channel opened")
 
                 # Declare exchange
                 self.channel.exchange_declare(
@@ -73,17 +104,25 @@ class PropertyScraper:
                     durable=True
                 )
 
+                logger.debug(f"Declared exchange {RABBITMQ_EXCHANGE} (type=topic, durable=True)")
+
                 # Declare queue
                 self.channel.queue_declare(
                     queue=RABBITMQ_QUEUE,
                     durable=True
                 )
 
+                logger.debug(f"Declared queue {RABBITMQ_QUEUE} (durable=True)")
+
                 # Bind queue to exchange
                 self.channel.queue_bind(
                     exchange=RABBITMQ_EXCHANGE,
                     queue=RABBITMQ_QUEUE,
                     routing_key=RABBITMQ_ROUTING_KEY
+                )
+
+                logger.debug(
+                    f"Bound queue {RABBITMQ_QUEUE} to exchange {RABBITMQ_EXCHANGE} with key {RABBITMQ_ROUTING_KEY}"
                 )
 
                 connected = True
@@ -103,6 +142,7 @@ class PropertyScraper:
     def connect_odoo(self):
         """Connect to Odoo using JSON-2 API"""
         logger.info(f"Connecting to Odoo at {ODOO_URL}")
+        logger.debug(f"Using database: {ODOO_DB}")
 
         try:
             if not ODOO_API_KEY:
@@ -115,12 +155,21 @@ class PropertyScraper:
                 'Content-Type': 'application/json'
             }
 
-            # Add database header if needed (for multi-database setups)
+            # Log safe headers (mask Authorization)
+            _safe_headers = dict(self.headers)
+
+            if 'Authorization' in _safe_headers:
+                _safe_headers['Authorization'] = 'bearer ****'
+
+            logger.debug(f"Prepared headers for JSON-2 API: {_safe_headers}")
+
+            # Add a database header if needed (for multi-database setups)
             if ODOO_DB:
                 self.headers['X-Odoo-Database'] = ODOO_DB
 
             # Set up base URL for JSON-2 API
             self.base_url = f"{ODOO_URL}/json/2"
+            logger.debug(f"Base URL set for JSON-2 API: {self.base_url}")
 
             # Test connection by getting current user context
             test_response = requests.post(
@@ -128,6 +177,9 @@ class PropertyScraper:
                 headers=self.headers,
                 json={},
                 timeout=30
+            )
+            logger.debug(
+                f"Odoo context_get response status={test_response.status_code}, body={test_response.text[:200]}"
             )
 
             if test_response.status_code != 200:
@@ -153,12 +205,31 @@ class PropertyScraper:
             Response data or None if failed
         """
         try:
+            def _masked(d: dict) -> dict:
+                # Mask common sensitive fields in payloads
+                masked = {}
+
+                for k, v in (d or {}).items():
+                    if any(s in k.lower() for s in [
+                        'password',
+                        'token',
+                        'apikey',
+                        'api_key',
+                        'authorization'
+                    ]):
+                        masked[k] = '****'
+                    else:
+                        masked[k] = v
+                return masked
+
             # For create method, convert 'vals' to 'vals_list' as expected by JSON-2 API
             if method == 'create' and 'vals' in kwargs:
                 vals = kwargs.pop('vals')
                 kwargs['vals_list'] = [vals]  # Wrap single record in list
 
             url = f"{self.base_url}/{model}/{method}"
+            logger.debug(f"Odoo request URL={url} payload={_masked(kwargs)}")
+
             response = requests.post(
                 url,
                 headers=self.headers,
@@ -167,6 +238,7 @@ class PropertyScraper:
             )
 
             if response.status_code == 200:
+                logger.debug(f"Odoo response 200: {str(response.text)[:500]}")
                 return response.json()
             else:
                 logger.error(f"Odoo API request failed: {response.status_code} - {response.text}")
@@ -188,6 +260,8 @@ class PropertyScraper:
             List of Property Pydantic models
         """
         logger.info(f"Scraping property data for location: {location}, type: {listing_type}")
+
+        logger.debug(f"HomeHarvest kwargs: {kwargs}")
         try:
             # Always use Pydantic models for return type
             kwargs['return_type'] = 'pydantic'
@@ -200,6 +274,11 @@ class PropertyScraper:
             )
 
             logger.info(f"Successfully scraped {len(properties)} properties")
+
+            logger.debug(
+                f"First property keys: {list(properties[0].__dict__.keys()) if properties else 'n/a'}"
+            )
+
             return properties
         except Exception as e:
             logger.error(f"Error scraping properties: {str(e)}")
@@ -229,52 +308,77 @@ class PropertyScraper:
                 # Check by property_id
                 if 'property_id' in odoo_property and odoo_property['property_id']:
                     existing_response = self.odoo_request(
-                        'real_estate.listing', 'search',
-                        domain=[['property_id', '=', odoo_property['property_id']]]
+                        'real_estate.listing',
+                        'search',
+                        domain=[
+                            ['property_id', '=', odoo_property['property_id']]
+                        ]
                     )
+
                     if existing_response:
-                        existing_ids = existing_response if isinstance(existing_response,
-                                                                       list) else existing_response.get('result', [])
+                        existing_ids = existing_response \
+                            if isinstance(existing_response, list) \
+                            else existing_response.get('result', [])
+
                         if existing_ids:
                             property_id = existing_ids[0]
 
                 # Check by MLS
                 if not property_id and 'mls' in odoo_property and odoo_property['mls']:
                     existing_response = self.odoo_request(
-                        'real_estate.listing', 'search',
-                        domain=[['mls', '=', odoo_property['mls']]]
+                        'real_estate.listing',
+                        'search',
+                        domain=[
+                            ['mls', '=', odoo_property['mls']]
+                        ]
                     )
+
                     if existing_response:
-                        existing_ids = existing_response if isinstance(existing_response,
-                                                                       list) else existing_response.get('result', [])
+                        existing_ids = existing_response \
+                            if isinstance(existing_response, list) \
+                            else existing_response.get('result', [])
+
                         if existing_ids:
                             property_id = existing_ids[0]
 
                 # Check by URL
                 if not property_id and 'url' in odoo_property and odoo_property['url']:
                     existing_response = self.odoo_request(
-                        'real_estate.listing', 'search',
-                        domain=[['url', '=', odoo_property['url']]]
+                        'real_estate.listing',
+                        'search',
+                        domain=[
+                            ['url', '=', odoo_property['url']]
+                        ]
                     )
+
                     if existing_response:
-                        existing_ids = existing_response if isinstance(existing_response,
-                                                                       list) else existing_response.get('result', [])
+                        existing_ids = existing_response \
+                            if isinstance(existing_response, list) \
+                            else existing_response.get('result', [])
+
                         if existing_ids:
                             property_id = existing_ids[0]
 
                 # Check by address
                 if not property_id and 'address' in odoo_property and odoo_property['address']:
                     existing_response = self.odoo_request(
-                        'real_estate.listing', 'search',
-                        domain=[['address', '=', odoo_property['address']]]
+                        'real_estate.listing',
+                        'search',
+                        domain=[
+                            ['address', '=', odoo_property['address']]
+                        ]
                     )
+
                     if existing_response:
-                        existing_ids = existing_response if isinstance(existing_response,
-                                                                       list) else existing_response.get('result', [])
+                        existing_ids = existing_response \
+                            if isinstance(existing_response, list) \
+                            else existing_response.get('result', [])
+
                         if existing_ids:
                             property_id = existing_ids[0]
 
-            # Extract photos, popularity, tax history, estimates, and features data before removing it from odoo_property
+            # Extract photos, popularity, tax history, estimates, and features
+            # data before removing it from odoo_property
             photos_data = None
             alt_photos_data = None
             popularity_data = None
@@ -283,64 +387,95 @@ class PropertyScraper:
             estimates_data = None
 
             property_data = property_model.model_dump()
+
             if 'photos' in property_data:
                 photos_data = property_data.get('photos', [])
 
-            # Extract alt_photos from description field
-            if 'description' in property_data and property_data['description'] and 'alt_photos' in property_data[
-                'description']:
-                alt_photos_data = property_data['description'].get('alt_photos', [])
+            # Extract alt_photos from the description field
+            if 'description' in property_data:
+                description = property_data.get('description', {})
+
+                logger.debug(f"Description: {description}")
+
+                if isinstance(description, dict):
+                    if 'alt_photos' in description:
+                        alt_photos_data = description.get('alt_photos', [])
 
             if 'popularity' in property_data:
                 popularity_data = property_data.get('popularity', {})
+                logger.debug(f"Popularity data: {popularity_data}")
 
             if 'tax_history' in property_data:
                 tax_history_data = property_data.get('tax_history', [])
+                logger.debug(f"Tax history data: {tax_history_data}")
 
             if 'details' in property_data:
                 features_data = property_data.get('details', [])
+                logger.debug(f"Features data: {features_data}")
 
             if 'estimates' in property_data:
                 estimates_data = property_data.get('estimates', {})
+                logger.debug(f"Estimates data: {estimates_data}")
 
             # Create or update the property
             if property_id:
                 logger.info(f"Updating existing property (ID: {property_id})")
 
                 update_response = self.odoo_request(
-                    'real_estate.listing', 'write',
+                    'real_estate.listing',
+                    'write',
                     ids=[property_id],
                     vals=odoo_property
                 )
+
+                logger.debug(f"Update response: {update_response}")
+
                 if not update_response:
                     raise Exception(f"Failed to update property {property_id}")
 
                 # Process photos if available
                 if photos_data:
-                    self.process_property_photos(property_id, photos_data, alt_photos_data)
+                    self.process_property_photos(
+                        property_id,
+                        photos_data,
+                        alt_photos_data
+                    )
 
                 # Process popularity data if available
                 if popularity_data:
-                    self.process_property_popularity(property_id, popularity_data)
+                    self.process_property_popularity(
+                        property_id,
+                        popularity_data
+                    )
 
                 # Process tax history data if available
                 if tax_history_data:
-                    self.process_property_tax_history(property_id, tax_history_data)
+                    self.process_property_tax_history(
+                        property_id,
+                        tax_history_data
+                    )
 
                 # Process features data if available
                 if features_data:
-                    self.process_property_features(property_id, features_data)
+                    self.process_property_features(
+                        property_id,
+                        features_data
+                    )
 
                 # Process estimates data if available
                 if estimates_data:
-                    self.process_property_estimates(property_id, estimates_data)
+                    self.process_property_estimates(
+                        property_id,
+                        estimates_data
+                    )
 
                 return property_id
             else:
                 logger.info("Creating new property")
 
                 create_response = self.odoo_request(
-                    'real_estate.listing', 'create',
+                    'real_estate.listing',
+                    'create',
                     vals=odoo_property
                 )
                 if not create_response:
@@ -397,7 +532,8 @@ class PropertyScraper:
         try:
             # Get existing popularity records for this property
             existing_response = self.odoo_request(
-                'real_estate.popularity', 'search_read',
+                'real_estate.popularity',
+                'search_read',
                 domain=[['property_id', '=', property_id]],
                 fields=['id', 'last_n_days']
             )
@@ -434,7 +570,8 @@ class PropertyScraper:
                     logger.info(f"Updating existing popularity record for period {last_n_days} days")
 
                     self.odoo_request(
-                        'real_estate.popularity', 'write',
+                        'real_estate.popularity',
+                        'write',
                         ids=[record_id],
                         vals=popularity_values
                     )
@@ -442,7 +579,8 @@ class PropertyScraper:
                     logger.info(f"Creating new popularity record for period {last_n_days} days")
 
                     self.odoo_request(
-                        'real_estate.popularity', 'create',
+                        'real_estate.popularity',
+                        'create',
                         vals=popularity_values
                     )
 
@@ -467,7 +605,8 @@ class PropertyScraper:
 
             # First, get existing feature records for this property
             existing_response = self.odoo_request(
-                'real_estate.feature', 'search_read',
+                'real_estate.feature',
+                'search_read',
                 domain=[['property_id', '=', property_id]],
                 fields=['id', 'category', 'parent_category']
             )
@@ -501,7 +640,8 @@ class PropertyScraper:
                 if feature_key in existing_features:
                     # Update existing record
                     self.odoo_request(
-                        'real_estate.feature', 'write',
+                        'real_estate.feature',
+                        'write',
                         ids=[existing_features[feature_key]],
                         vals=feature_record
                     )
@@ -509,7 +649,8 @@ class PropertyScraper:
                 else:
                     # Create new record
                     create_response = self.odoo_request(
-                        'real_estate.feature', 'create',
+                        'real_estate.feature',
+                        'create',
                         vals=feature_record
                     )
                     # Handle response - it could be a list or dict
@@ -552,7 +693,8 @@ class PropertyScraper:
 
             # First, get existing estimate records for this property
             existing_response = self.odoo_request(
-                'real_estate.estimate', 'search_read',
+                'real_estate.estimate',
+                'search_read',
                 domain=[['property_id', '=', property_id]],
                 fields=['id', 'date', 'source_name', 'source_type']
             )
@@ -600,7 +742,8 @@ class PropertyScraper:
                 if key in existing_estimates:
                     # Update existing record
                     self.odoo_request(
-                        'real_estate.estimate', 'write',
+                        'real_estate.estimate',
+                        'write',
                         ids=[existing_estimates[key]],
                         vals=estimate_record
                     )
@@ -608,7 +751,8 @@ class PropertyScraper:
                 else:
                     # Create new record
                     create_response = self.odoo_request(
-                        'real_estate.estimate', 'create',
+                        'real_estate.estimate',
+                        'create',
                         vals=estimate_record
                     )
                     # Handle response - it could be a list or dict
@@ -645,7 +789,8 @@ class PropertyScraper:
 
             # First, get existing tax history records for this property
             existing_response = self.odoo_request(
-                'real_estate.tax_history', 'search_read',
+                'real_estate.tax_history',
+                'search_read',
                 domain=[['property_id', '=', property_id]],
                 fields=['id', 'year']
             )
@@ -692,7 +837,8 @@ class PropertyScraper:
                 if year in existing_years:
                     # Update existing record
                     self.odoo_request(
-                        'real_estate.tax_history', 'write',
+                        'real_estate.tax_history',
+                        'write',
                         ids=[existing_years[year]],
                         vals=tax_record
                     )
@@ -700,7 +846,8 @@ class PropertyScraper:
                 else:
                     # Create new record
                     create_response = self.odoo_request(
-                        'real_estate.tax_history', 'create',
+                        'real_estate.tax_history',
+                        'create',
                         vals=tax_record
                     )
                     # Handle response - it could be a list or dict
@@ -744,7 +891,8 @@ class PropertyScraper:
 
             # First, get existing photos to avoid duplicates
             existing_response = self.odoo_request(
-                'real_estate.photo', 'search_read',
+                'real_estate.photo',
+                'search_read',
                 domain=[['property_id', '=', property_id]],
                 fields=['preview_href']
             )
@@ -814,7 +962,8 @@ class PropertyScraper:
 
                 # Create photo record
                 create_response = self.odoo_request(
-                    'real_estate.photo', 'create',
+                    'real_estate.photo',
+                    'create',
                     vals=photo_data
                 )
                 photo_id = None
@@ -876,7 +1025,8 @@ class PropertyScraper:
 
                 # Check if tag already exists
                 existing_response = self.odoo_request(
-                    'real_estate.photo.tag', 'search',
+                    'real_estate.photo.tag',
+                    'search',
                     domain=[['name', '=', tag_label]]
                 )
                 existing_tags = existing_response if isinstance(existing_response, list) else existing_response.get(
@@ -887,7 +1037,8 @@ class PropertyScraper:
                 else:
                     # Create new tag
                     create_response = self.odoo_request(
-                        'real_estate.photo.tag', 'create',
+                        'real_estate.photo.tag',
+                        'create',
                         vals={'name': tag_label}
                     )
                     tag_id = create_response if isinstance(create_response, (int, str)) else create_response.get(
@@ -903,7 +1054,8 @@ class PropertyScraper:
                 if filtered_tag_ids:
                     logger.info(f"Updating photo {photo_id} with {len(filtered_tag_ids)} tags")
                     self.odoo_request(
-                        'real_estate.photo', 'write',
+                        'real_estate.photo',
+                        'write',
                         ids=[photo_id],
                         vals={'tag_ids': [(6, 0, filtered_tag_ids)]}
                     )
@@ -928,7 +1080,8 @@ class PropertyScraper:
 
                 # First, try to look up tag by api_name
                 existing_response = self.odoo_request(
-                    'real_estate.tag', 'search',
+                    'real_estate.tag',
+                    'search',
                     domain=[['api_name', '=', api_name]]
                 )
                 existing_tags = existing_response if isinstance(existing_response, list) else existing_response.get(
@@ -950,7 +1103,8 @@ class PropertyScraper:
                     }
 
                     create_response = self.odoo_request(
-                        'real_estate.tag', 'create',
+                        'real_estate.tag',
+                        'create',
                         vals=tag_data
                     )
 
@@ -1032,7 +1186,6 @@ class PropertyScraper:
             return (phones[0] or {}).get('number', '') or ''
 
         agent_phone = first_phone(agent_phones)
-        office_phone_json = json.dumps(office_phones) if office_phones else ''
 
         # Map HomeHarvest fields to Odoo fields
         odoo_property = {
@@ -1069,7 +1222,6 @@ class PropertyScraper:
             'list_price_max': float(prop.get('list_price_max', 0) or 0),
             'sold_price': float(prop.get('sold_price', 0) or 0),
             'last_sold_price': float(prop.get('last_sold_price', 0) or 0),
-            # price_per_sqft is computed in Odoo; estimated_value is related to best estimate
             'estimated_monthly_rental': float(prop.get('estimated_monthly_rental', 0) or 0),
 
             # Property Description
@@ -1168,14 +1320,16 @@ class PropertyScraper:
                     continue
                 # find existing school by name
                 existing = self.odoo_request(
-                    'real_estate.school', 'search',
+                    'real_estate.school',
+                    'search',
                     domain=[["name", "=", name]],
                     limit=1,
                 )
                 sid = existing[0] if existing else None
                 if not sid:
                     created = self.odoo_request(
-                        'real_estate.school', 'create',
+                        'real_estate.school',
+                        'create',
                         vals={'name': name}
                     )
                     if created:
@@ -1441,6 +1595,7 @@ class PropertyScraper:
         """
         try:
             logger.info(f"Received message: {body}")
+            logger.debug(f"Delivery info: method={method}, properties={properties}")
 
             message = json.loads(body)
 
@@ -1448,6 +1603,7 @@ class PropertyScraper:
             location = message.get('location')
             listing_type = message.get('listing_type', 'for_sale')
             record_id = message.get('record_id')  # Extract record_id if provided
+            logger.debug(f"Parsed message: location={location}, listing_type={listing_type}, record_id={record_id}")
 
             if record_id:
                 logger.info(f"Record ID provided: {record_id}. Will update this specific record.")
@@ -1470,6 +1626,7 @@ class PropertyScraper:
                     'source_url'
                 ]
             }
+            logger.debug(f"Scrape kwargs after filtering: {kwargs}")
 
             # Log the parameters being passed to scrape_property
             logger.info(
@@ -1509,6 +1666,7 @@ class PropertyScraper:
     def start_consuming(self):
         """Start consuming messages from RabbitMQ"""
         logger.info(f"Starting to consume messages from queue: {RABBITMQ_QUEUE}")
+        logger.debug("Configuring basic_qos with prefetch_count=1 and registering consumer callback")
 
         # Set up consumer
         self.channel.basic_qos(prefetch_count=1)
@@ -1527,6 +1685,7 @@ class PropertyScraper:
         finally:
             if self.connection.is_open:
                 self.connection.close()
+                logger.debug("RabbitMQ connection closed")
 
 
 if __name__ == "__main__":
