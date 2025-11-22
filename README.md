@@ -184,7 +184,7 @@ You will see a message in the console that indicates the scraper is running succ
 
 ## Typical data flow
 
-1) User requests property, and sets an address. They click "Update Property"
+1) User creates a property and sets an address. They click "Update Property"
 2) A message is published to RabbitMQ
 3) The scraper consumes, calls HomeHarvest, and transforms results
 4) Records are created/updated in Odoo
