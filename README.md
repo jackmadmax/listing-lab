@@ -73,10 +73,10 @@ You can run the following command:
 
 ## Build the application
 
-Run `docker compose build`
-
 > [!TIP]
 > You can also run `docker compose up --build`.
+
+Run `docker compose build`
 
 ## Run the application
 
