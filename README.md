@@ -65,11 +65,13 @@ Clone this repository, and open a terminal in the root directory.
 
 ## Configure your instance
 
+> [!TIP]
+> You can run the following command:
+>
+> `cp .env.example .env`
+
+
 Copy the `.env.example` file to `.env`
-
-You can run the following command:
-
-`cp .env.example .env`
 
 ## Build the application
 
